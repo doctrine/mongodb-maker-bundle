@@ -1,0 +1,9 @@
+# Auto-detect text files, ensure they use LF.
+* text=auto eol=lf
+
+# Exclude non-essential files from dist
+/.* export-ignore
+/*.dist export-ignore
+/.neon export-ignore
+/docs export-ignore
+/tests export-ignore

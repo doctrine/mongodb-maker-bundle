@@ -1,1 +1,7 @@
-/vendor/
+/.phpcs-cache
+/.phpunit.result.cache
+/composer.lock
+/phpcs.xml
+/phpunit.xml
+/var
+/vendor
