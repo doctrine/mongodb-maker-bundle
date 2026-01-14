@@ -13,7 +13,9 @@
 
     <file>config</file>
     <file>src</file>
-    <file>tests</file>
+    <file>tests/TestKernel.php</file>
+    <file>tests/BundleTest.php</file>
+    <file>tests/Maker</file>
 
     <rule ref="Doctrine" />
     <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingNativeTypeHint" />

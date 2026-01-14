@@ -3,11 +3,14 @@
     "description": "Symfony MakerBundle for MongoDB ODM",
     "keywords": ["mongodb", "maker", "odm", "dev"],
     "type": "symfony-bundle",
+    "repositories": [
+        { "type": "github", "url": "https://github.com/GromNaN/symfony-maker-bundle" }
+    ],
     "require": {
         "php": "^8.4",
         "ext-mongodb": "^2.1",
         "doctrine/mongodb-odm-bundle": "^5.5",
-        "symfony/maker-bundle": "^1.65",
+        "symfony/maker-bundle": "dev-develop",
         "symfony/http-kernel": "^7.4|^8"
     },
     "require-dev": {

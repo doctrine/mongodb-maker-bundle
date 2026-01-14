@@ -3,5 +3,6 @@
 /composer.lock
 /phpcs.xml
 /phpunit.xml
+/tests/tmp
 /var
 /vendor

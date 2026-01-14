@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Doctrine\Bundle\MongoDBMakerBundle\Tests;
 
 use Doctrine\Bundle\MongoDBBundle\DoctrineMongoDBBundle;
@@ -49,6 +51,7 @@ class TestKernel extends Kernel implements CompilerPassInterface
     {
         /**
          * Makes all makers public to help the tests
+         *
          * @see \Symfony\Bundle\MakerBundle\Test\MakerTestKernel::process()
          */
         foreach ($container->findTaggedServiceIds(MakeCommandRegistrationPass::MAKER_TAG) as $id => $tags) {

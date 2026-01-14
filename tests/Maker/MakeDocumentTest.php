@@ -39,9 +39,9 @@ class MakeDocumentTest extends MakerTestCase
                 // @todo We have to re-install the bundles to get the recipe-contrib applied
                 // https://github.com/symfony/flex/issues/1076
                 // https://github.com/symfony/recipes/pull/1509
-                $runner->runProcess('composer remove --dev doctrine/mongodb-maker-bundle doctrine/mongodb-odm-bundle --no-scripts');
+                $runner->runProcess('composer remove --no-scripts --dev doctrine/mongodb-maker-bundle');
                 $runner->runProcess('composer config extra.symfony.allow-contrib true');
-                $runner->runProcess('composer require --dev doctrine/mongodb-maker-bundle doctrine/mongodb-odm-bundle');
+                $runner->runProcess('composer require --dev doctrine/mongodb-maker-bundle');
 
                 if (! $withDatabase) {
                     return;
@@ -50,10 +50,8 @@ class MakeDocumentTest extends MakerTestCase
                 $runner->replaceInFile(
                     '.env',
                     'mongodb://localhost:27017',
-                    getenv('MONGODB_URI'),
+                    (string) getenv('MONGODB_URI'),
                 );
-
-                self::runDocumentTest($runner);
             });
     }
 
@@ -74,7 +72,7 @@ class MakeDocumentTest extends MakerTestCase
                     '',
                 ]);
 
-                self::runDocumentTest($runner, ['firstName' => 'Dev']);
+                self::runDocumentTest($runner);
             }),
         ];
     }

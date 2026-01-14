@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Document;
 
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
@@ -8,8 +10,8 @@ use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 class User
 {
     #[ODM\Id]
-    public ?int $id = null;
+    public int|null $id = null;
 
     #[ODM\Field]
-    public ?string $firstName = null;
+    public string|null $firstName = null;
 }
