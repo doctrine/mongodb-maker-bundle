@@ -6,6 +6,11 @@
          failOnAllIssues="true"
          displayDetailsOnAllIssues="true"
 >
+    <php>
+        <ini name="error_reporting" value="-1" />
+        <env name="MONGODB_URI" value="mongodb://localhost:27017" />
+    </php>
+
     <testsuites>
         <testsuite name="Doctrine MongoDB Maker Bundle Test Suite">
             <directory>./tests/</directory>

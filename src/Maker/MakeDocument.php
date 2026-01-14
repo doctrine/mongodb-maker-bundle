@@ -10,14 +10,20 @@ use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\InputAwareMakerInterface;
 use Symfony\Bundle\MakerBundle\InputConfiguration;
 use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
+use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+
+use function dirname;
+use function file_get_contents;
+use function sprintf;
 
 final class MakeDocument extends AbstractMaker implements InputAwareMakerInterface
 {
     public static function getCommandName(): string
     {
-        return 'doctrine:mongodb:make:document';
+        return 'make:document';
     }
 
     public static function getCommandDescription(): string
@@ -27,7 +33,9 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
 
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
-        // TODO: Implement configureCommand() method.
+        $command
+            ->addArgument('name', InputArgument::OPTIONAL, sprintf('Class name of the entity to create or update (e.g. <fg=yellow>%s</>)', Str::asClassName(Str::getRandomTerm())))
+            ->setHelp(file_get_contents(dirname(__DIR__, 2) . '/config/help/MakeDocument.txt'));
     }
 
     public function configureDependencies(DependencyBuilder $dependencies, InputInterface|null $input = null): void
@@ -37,6 +45,12 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
 
     public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator): void
     {
-        // TODO: Implement generate() method.
+        $entityClassDetails = $generator->createClassNameDetails(
+            $input->getArgument('name'),
+            'Document\\'
+        );
+
+
+        $generator->writeChanges();
     }
 }
