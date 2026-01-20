@@ -36,13 +36,6 @@ class MakeDocumentTest extends MakerTestCase
     {
         return self::buildMakerTest()
             ->preRun(static function (MakerTestRunner $runner) use ($withDatabase): void {
-                // @todo We have to re-install the bundles to get the recipe-contrib applied
-                // https://github.com/symfony/flex/issues/1076
-                // https://github.com/symfony/recipes/pull/1509
-                $runner->runProcess('composer remove --no-scripts --dev doctrine/mongodb-maker-bundle');
-                $runner->runProcess('composer config extra.symfony.allow-contrib true');
-                $runner->runProcess('composer require --dev doctrine/mongodb-maker-bundle');
-
                 if (! $withDatabase) {
                     return;
                 }
