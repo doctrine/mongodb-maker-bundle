@@ -52,7 +52,7 @@ class BundleTest extends TestCase
 
         $commandLoader = $kernel->getContainer()->get('console.command_loader');
         self::assertInstanceOf(CommandLoaderInterface::class, $commandLoader);
-        self::assertTrue($commandLoader->has('doctrine:mongodb:make:document'));
+        self::assertTrue($commandLoader->has('make:document'));
 
         $kernel->shutdown();
     }

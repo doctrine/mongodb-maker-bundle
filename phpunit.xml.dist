@@ -14,6 +14,7 @@
     <testsuites>
         <testsuite name="Doctrine MongoDB Maker Bundle Test Suite">
             <directory>./tests/</directory>
+            <exclude>./tests/tmp</exclude>
         </testsuite>
     </testsuites>
 
