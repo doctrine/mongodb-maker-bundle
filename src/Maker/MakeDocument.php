@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Doctrine\Bundle\MongoDBMakerBundle\Maker;
 
-use Doctrine\Bundle\MongoDBBundle\DependencyInjection\Compiler\DoctrineMongoDBMappingsPass;
+use Doctrine\Bundle\MongoDBBundle\DoctrineMongoDBBundle;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\DocumentClassGenerator;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\MongoDBHelper;
 use Doctrine\ODM\MongoDB\Types\Type;
@@ -85,7 +85,7 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
             ->addArgument('name', InputArgument::OPTIONAL, sprintf('Class name of the document to create or update (e.g. <fg=yellow>%s</>)', Str::asClassName(Str::getRandomTerm())))
             ->addOption('regenerate', null, InputOption::VALUE_NONE, 'Instead of adding new fields, simply generate the methods (e.g. getter/setter) for existing fields')
             ->addOption('overwrite', null, InputOption::VALUE_NONE, 'Overwrite any existing getter/setter methods')
-            ->setHelp(file_get_contents(dirname(__DIR__, 2) . '/config/help/MakeDocument.txt'));
+            ->setHelp((string) file_get_contents(dirname(__DIR__, 2) . '/config/help/MakeDocument.txt'));
 
         $this->addWithUuidOption($command);
 
@@ -178,10 +178,8 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
                 break;
             }
 
-            if ($newField instanceof ClassProperty) {
-                $manipulator->addEntityField($newField);
-                $currentFields[] = $newField->propertyName;
-            }
+            $manipulator->addEntityField($newField);
+            $currentFields[] = $newField->propertyName;
 
             $this->fileManager->dumpFile($documentPath, $manipulator->getSourceCode());
         }
@@ -196,8 +194,8 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
     public function configureDependencies(DependencyBuilder $dependencies, InputInterface|null $input = null): void
     {
         $dependencies->addClassDependency(
-            DoctrineMongoDBMappingsPass::class,
-            'mongodb-odm-bundle',
+            DoctrineMongoDBBundle::class,
+            'doctrine/mongodb-odm-bundle',
         );
     }
 

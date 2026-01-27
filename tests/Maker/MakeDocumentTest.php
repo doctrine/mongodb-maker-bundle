@@ -21,9 +21,6 @@ use Symfony\Bundle\MakerBundle\Test\MakerTestRunner;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 use function getenv;
-use function sprintf;
-use function strpos;
-use function substr;
 
 class MakeDocumentTest extends MakerTestCase
 {
@@ -61,7 +58,7 @@ class MakeDocumentTest extends MakerTestCase
                 $runner->runMaker([
                     // document class name
                     'User',
-                    // add not additional fields
+                    // no additional fields
                     '',
                 ]);
 
@@ -79,43 +76,6 @@ class MakeDocumentTest extends MakerTestCase
             ['data' => $data],
         );
 
-        //$runner->updateSchema();
         $runner->runTests();
-    }
-
-    private static function runCustomTest(MakerTestRunner $runner, string $filename, bool $withDatabase = true): void
-    {
-        $runner->copy(
-            'make-document/tests/' . $filename,
-            'tests/GeneratedDocumentTest.php',
-        );
-
-        if ($withDatabase) {
-            $runner->updateSchema();
-        }
-
-        $runner->runTests();
-    }
-
-    private static function copyDocument(MakerTestRunner $runner, string $filename): void
-    {
-        $documentClassName = substr(
-            $filename,
-            0,
-            strpos($filename, '-'),
-        );
-
-        $runner->copy(
-            sprintf('make-document/documents/attributes/%s', $filename),
-            sprintf('src/Document/%s.php', $documentClassName),
-        );
-    }
-
-    private static function copyDocumentDirectory(MakerTestRunner $runner, string $directory): void
-    {
-        $runner->copy(
-            sprintf('make-document/%s/attributes', $directory),
-            '',
-        );
     }
 }

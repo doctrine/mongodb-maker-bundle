@@ -10,8 +10,7 @@ namespace <?= $namespace ?>;
 <?= $use_statements; ?>
 
 #[ODM\Document(repositoryClass: <?= $repository_class_name ?>::class)]
-<?php if ($should_escape_collection_name): ?>#[ODM\Collection(name: '<?= $collection_name ?>')]
-<?php endif ?>
+#[ODM\Collection(name: '<?= $collection_name ?>')]
 class <?= $class_name."\n" ?>
 {
 <?php if (EntityIdTypeEnum::UUID === $id_type): ?>

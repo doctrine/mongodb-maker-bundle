@@ -48,7 +48,6 @@ final class DocumentClassGenerator
             [
                 'use_statements' => $useStatements,
                 'repository_class_name' => $repoClassDetails->getShortName(),
-                'should_escape_collection_name' => $this->mongoDBHelper->isKeyword($collectionName),
                 'collection_name' => $collectionName,
                 'id_type' => $idType,
             ],
