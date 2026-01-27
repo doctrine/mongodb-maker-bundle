@@ -38,7 +38,7 @@ final class DocumentClassGenerator
 
         $useStatements = new UseStatementGenerator([
             $repoClassDetails->getFullName(),
-            ['Doctrine\\ODM\\MongoDB\\Mapping\\Annotations' => 'ODM'],
+            ['Doctrine\\ODM\\MongoDB\\Mapping\\Attribute' => 'ODM'],
         ]);
 
         $templatePath = dirname(__DIR__, 2) . '/templates/mongodb/Document.tpl.php';
