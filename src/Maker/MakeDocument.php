@@ -105,8 +105,8 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
         $question            = $this->createDocumentClassQuestion($argument->getDescription());
         $documentClassName ??= $io->askQuestion($question);
 
-        while ($dangerous = $this->verifyDocumentName($documentClassName)) {
-            if ($io->confirm(sprintf('"%s" contains one or more non-ASCII characters, which are potentially problematic with some database. It is recommended to use only ASCII characters for document names. Continue anyway?', $documentClassName), false)) {
+        while ($this->verifyDocumentName($documentClassName)) {
+            if ($io->confirm(sprintf('"%s" contains one or more non-ASCII characters, which can be problematic with MongoDB. It is recommended to use only ASCII characters for document names. Continue anyway?', $documentClassName), false)) {
                 break;
             }
 
@@ -141,17 +141,14 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
             );
 
             $generator->writeChanges();
-        }
-
-        if ($classExists) {
-            $documentPath = $this->getPathOfClass($documentClassDetails->getFullName());
-            $io->text('Your document already exists! So let\'s add some new fields!');
-        } else {
             $io->text([
                 '',
                 'Document generated! Now let\'s add some fields!',
                 'You can always add more fields later manually or by re-running this command.',
             ]);
+        } else {
+            $documentPath = $this->getPathOfClass($documentClassDetails->getFullName());
+            $io->text('Your document already exists! So let\'s add some new fields!');
         }
 
         $currentFields = $this->getPropertyNames($documentClassDetails->getFullName());
