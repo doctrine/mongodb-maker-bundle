@@ -9,7 +9,6 @@ use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\DocumentClassGenerator;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\MongoDBHelper;
 use Doctrine\ODM\MongoDB\Types\Type;
 use InvalidArgumentException;
-use LogicException;
 use ReflectionClass;
 use ReflectionProperty;
 use Symfony\Bundle\MakerBundle\ConsoleStyle;
@@ -373,7 +372,7 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
     private function getPropertyNames(string $class): array
     {
         if (! class_exists($class)) {
-            throw new LogicException(sprintf('Class "%s" does not exist.', $class));
+            return [];
         }
 
         $reflClass = new ReflectionClass($class);
