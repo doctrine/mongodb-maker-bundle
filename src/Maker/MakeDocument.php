@@ -7,6 +7,7 @@ namespace Doctrine\Bundle\MongoDBMakerBundle\Maker;
 use Doctrine\Bundle\MongoDBBundle\DoctrineMongoDBBundle;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\DocumentClassGenerator;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\MongoDBHelper;
+use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\Validator;
 use Doctrine\ODM\MongoDB\Types\Type;
 use InvalidArgumentException;
 use ReflectionClass;
@@ -23,7 +24,6 @@ use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Bundle\MakerBundle\Util\ClassDetails;
 use Symfony\Bundle\MakerBundle\Util\ClassSource\Model\ClassProperty;
 use Symfony\Bundle\MakerBundle\Util\ClassSourceManipulator;
-use Symfony\Bundle\MakerBundle\Validator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -195,7 +195,7 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
             $questionText = 'Add another property? Enter the property name (or press <return> to stop adding fields)';
         }
 
-        $fieldName = $io->ask($questionText, null, function ($name) use ($fields) {
+        $fieldName = $io->ask($questionText, null, static function ($name) use ($fields) {
             // allow it to be empty
             if (! $name) {
                 return $name;
@@ -205,7 +205,7 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
                 throw new InvalidArgumentException(sprintf('The "%s" property already exists.', $name));
             }
 
-            return Validator::validateDoctrineFieldName($name, $this->mongoDBHelper->getRegistry());
+            return Validator::validateFieldName($name);
         });
 
         if (! $fieldName) {
