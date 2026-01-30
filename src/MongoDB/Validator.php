@@ -6,10 +6,10 @@ namespace Doctrine\Bundle\MongoDBMakerBundle\MongoDB;
 
 use Symfony\Bundle\MakerBundle\Exception\RuntimeCommandException;
 
-use function ltrim;
 use function preg_match;
 use function sprintf;
 use function str_contains;
+use function trim;
 
 final class Validator
 {
@@ -35,14 +35,10 @@ final class Validator
      * - Cannot contain dots (used for nested documents)
      * - Should be valid PHP property names
      */
-    public static function validateFieldName(string|null $name): string
+    public static function validateFieldName(string $name): string
     {
-        if ($name === null || $name === '') {
-            throw new RuntimeCommandException('Field name cannot be empty.');
-        }
-
-        // Trim $ prefix (reserved for MongoDB operators)
-        $name = ltrim($name, '$');
+        // Trim $ prefix (reserved for MongoDB operators) and spaces
+        $name = trim($name, '$ ');
 
         if ($name === '') {
             throw new RuntimeCommandException('Field name cannot be empty.');

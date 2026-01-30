@@ -68,7 +68,7 @@ class ValidatorTest extends TestCase
     }
 
     #[DataProvider('emptyFieldNameProvider')]
-    public function testValidateFieldNameWithEmptyValue(string|null $fieldName): void
+    public function testValidateFieldNameWithEmptyValue(string $fieldName): void
     {
         $this->expectException(RuntimeCommandException::class);
         $this->expectExceptionMessage('Field name cannot be empty.');
@@ -79,7 +79,6 @@ class ValidatorTest extends TestCase
     /** @return Generator<string, array{0: string|null}> */
     public static function emptyFieldNameProvider(): Generator
     {
-        yield 'null' => [null];
         yield 'empty string' => [''];
         yield 'dollar only' => ['$'];
         yield 'multiple dollars only' => ['$$$'];
