@@ -4,6 +4,8 @@ parameters:
     paths:
         - src
         - tests
+    excludePaths:
+        - tests/tmp
 
 includes:
     - vendor/phpstan/phpstan-phpunit/extension.neon
