@@ -47,26 +47,14 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
 {
     use UidTrait;
 
-    private Generator $generator;
-    private DocumentClassGenerator $documentClassGenerator;
-
     public function __construct(
         private FileManager $fileManager,
         private MongoDBHelper $mongoDBHelper,
-        Generator|null $generator = null,
-        DocumentClassGenerator|null $documentClassGenerator = null,
+        private Generator|null $generator = null,
+        private DocumentClassGenerator|null $documentClassGenerator = null,
     ) {
-        if ($generator === null) {
-            $this->generator = new Generator($fileManager, 'App\\');
-        } else {
-            $this->generator = $generator;
-        }
-
-        if ($documentClassGenerator === null) {
-            $this->documentClassGenerator = new DocumentClassGenerator($this->generator, $this->mongoDBHelper);
-        } else {
-            $this->documentClassGenerator = $documentClassGenerator;
-        }
+        $this->generator              ??= new Generator($fileManager, 'App\\');
+        $this->documentClassGenerator ??= new DocumentClassGenerator($this->generator, $this->mongoDBHelper);
     }
 
     public static function getCommandName(): string
