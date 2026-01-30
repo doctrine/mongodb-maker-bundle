@@ -6,11 +6,10 @@ namespace Doctrine\Bundle\MongoDBMakerBundle\MongoDB;
 
 use Symfony\Bundle\MakerBundle\Exception\RuntimeCommandException;
 
+use function ltrim;
 use function preg_match;
 use function sprintf;
 use function str_contains;
-use function str_starts_with;
-use function var_export;
 
 final class Validator
 {
@@ -31,9 +30,9 @@ final class Validator
      *
      * MongoDB field names:
      * - Cannot be empty
-     * - Cannot start with $ (reserved for operators)
+     * - $ prefix is trimmed (reserved for operators)
      * - Cannot contain null character
-     * - Cannot contain dots in most contexts (used for nested documents)
+     * - Cannot contain dots (used for nested documents)
      * - Should be valid PHP property names
      */
     public static function validateFieldName(string|null $name): string
@@ -42,18 +41,25 @@ final class Validator
             throw new RuntimeCommandException('Field name cannot be empty.');
         }
 
+        // Trim $ prefix (reserved for MongoDB operators)
+        $name = ltrim($name, '$');
+
+        if ($name === '') {
+            throw new RuntimeCommandException('Field name cannot be empty.');
+        }
+
         // MongoDB-specific restrictions
-        if (str_starts_with($name, '$')) {
-            throw new RuntimeCommandException(sprintf('Field name %s cannot start with "$" (reserved for MongoDB operators).', var_export($name, true)));
+        if (str_contains($name, '.')) {
+            throw new RuntimeCommandException(sprintf('Field name "%s" cannot contain a dot (used for nested documents).', $name));
         }
 
         if (str_contains($name, "\0")) {
-            throw new RuntimeCommandException(sprintf('Field name %s cannot contain null characters.', var_export($name, true)));
+            throw new RuntimeCommandException(sprintf('Field name "%s" cannot contain null characters.', $name));
         }
 
         // Check for valid PHP property name (starts with letter or underscore, followed by letters, numbers, or underscores)
         if (! preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $name)) {
-            throw new RuntimeCommandException(sprintf('%s is not a valid PHP property name.', var_export($name, true)));
+            throw new RuntimeCommandException(sprintf('"%s" is not a valid PHP property name.', $name));
         }
 
         return $name;

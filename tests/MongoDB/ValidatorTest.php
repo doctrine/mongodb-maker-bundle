@@ -46,23 +46,25 @@ class ValidatorTest extends TestCase
     }
 
     #[DataProvider('validFieldNameProvider')]
-    public function testValidateFieldNameWithValidNames(string $fieldName): void
+    public function testValidateFieldNameWithValidNames(string $fieldName, string $expected): void
     {
         $result = Validator::validateFieldName($fieldName);
 
-        $this->assertSame($fieldName, $result);
+        $this->assertSame($expected, $result);
     }
 
-    /** @return Generator<string, array{0: string}> */
+    /** @return Generator<string, array{0: string, 1: string}> */
     public static function validFieldNameProvider(): Generator
     {
-        yield 'simple name' => ['name'];
-        yield 'camelCase' => ['firstName'];
-        yield 'with underscore prefix' => ['_private'];
-        yield 'with numbers' => ['field1'];
-        yield 'snake_case' => ['user_name'];
-        yield 'uppercase' => ['CONSTANT'];
-        yield 'mixed case with numbers' => ['myField2Test'];
+        yield 'simple name' => ['name', 'name'];
+        yield 'camelCase' => ['firstName', 'firstName'];
+        yield 'with underscore prefix' => ['_private', '_private'];
+        yield 'with numbers' => ['field1', 'field1'];
+        yield 'snake_case' => ['user_name', 'user_name'];
+        yield 'uppercase' => ['CONSTANT', 'CONSTANT'];
+        yield 'mixed case with numbers' => ['myField2Test', 'myField2Test'];
+        yield 'dollar prefix is trimmed' => ['$field', 'field'];
+        yield 'multiple dollar prefix is trimmed' => ['$$field', 'field'];
     }
 
     #[DataProvider('emptyFieldNameProvider')]
@@ -79,6 +81,8 @@ class ValidatorTest extends TestCase
     {
         yield 'null' => [null];
         yield 'empty string' => [''];
+        yield 'dollar only' => ['$'];
+        yield 'multiple dollars only' => ['$$$'];
     }
 
     #[DataProvider('invalidPhpPropertyNameProvider')]
@@ -111,7 +115,7 @@ class ValidatorTest extends TestCase
     /** @return Generator<string, array{0: string, 1: string}> */
     public static function mongoDbRestrictedFieldNameProvider(): Generator
     {
-        yield 'dollar prefix' => ['$field', '/cannot start with "\$"/'];
+        yield 'contains dot' => ['field.name', '/cannot contain a dot/'];
         yield 'null character' => ["field\0name", '/cannot contain null characters/'];
     }
 }
