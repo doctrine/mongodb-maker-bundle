@@ -7,6 +7,11 @@ parameters:
     excludePaths:
         - tests/tmp
 
+    ignoreErrors:
+        - identifier: class.notFound
+          path: tests/MongoDB/__snapshots__/
+
+
 includes:
     - vendor/phpstan/phpstan-phpunit/extension.neon
     - vendor/phpstan/phpstan-phpunit/rules.neon
