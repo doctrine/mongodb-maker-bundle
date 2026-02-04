@@ -13,7 +13,8 @@
         "doctrine/mongodb-odm-bundle": "^5.6",
         "symfony/http-kernel": "^7.4|^8",
         "symfony/maker-bundle": "^1@dev",
-        "symfony/polyfill-php85": "^1.33"
+        "symfony/polyfill-php85": "^1.33",
+        "symfony/uid":  "^7.4|^8"
     },
     "require-dev": {
         "doctrine/coding-standard": "^14",

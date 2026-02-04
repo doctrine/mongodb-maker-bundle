@@ -13,16 +13,24 @@ declare(strict_types=1);
 
 namespace Doctrine\Bundle\MongoDBMakerBundle\Tests\MongoDB;
 
+use DateTime;
+use DateTimeImmutable;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\MongoDBHelper;
 use Doctrine\ODM\MongoDB\Configuration;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Mapping\Driver\AttributeDriver;
+use Doctrine\ODM\MongoDB\Types\Type;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\Persistence\ObjectManager;
 use Generator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
+use ReflectionException;
+use Symfony\Component\Uid\Uuid;
+
+use function class_exists;
+use function get_debug_type;
 
 class MongoDBHelperTest extends TestCase
 {
@@ -140,5 +148,77 @@ class MongoDBHelperTest extends TestCase
             [],
             'App\\Document',
         ];
+    }
+
+    #[DataProvider('canFieldTypeBeInferredByPropertyTypeDataProvider')]
+    public function testCanFieldTypeBeInferredByPropertyType(string $fieldType, string $propertyType, bool $expectedResult): void
+    {
+        $this->assertEquals($expectedResult, MongoDBHelper::canFieldTypeBeInferredByPropertyType($fieldType, $propertyType));
+    }
+
+    public static function canFieldTypeBeInferredByPropertyTypeDataProvider(): Generator
+    {
+        yield 'string field type with string property type' => [Type::STRING, 'string', true];
+        yield 'int field type with int property type' => [Type::INT, 'int', true];
+        yield 'float field type with float property type' => [Type::FLOAT, 'float', true];
+        yield 'bool field type with bool property type' => [Type::BOOL, 'bool', true];
+        yield 'date field type with DateTime property type' => [Type::DATE, '\\' . DateTime::class, true];
+        yield 'date_immutable field type with DateTimeImmutable property type' => [Type::DATE_IMMUTABLE, '\\' . DateTimeImmutable::class, true];
+        yield 'has field type with array property type' => [Type::HASH, 'array', true];
+        yield 'uuid field type with Uuid property type' => [Type::UUID, Uuid::class, true];
+
+        yield 'object ID with string property type' => [Type::OBJECTID, 'string', false];
+        yield 'collection field type with array property type' => [Type::COLLECTION, 'array', false];
+    }
+
+    /** @throws ReflectionException */
+    #[DataProvider('getPropertyTypeForFieldDataProvider')]
+    public function testGetPropertyTypeForField(string $fieldType, string|null $expectedPropertyType): void
+    {
+        $this->assertSame($expectedPropertyType, MongoDBHelper::getPropertyTypeForField($fieldType));
+    }
+
+    public static function getPropertyTypeForFieldDataProvider(): Generator
+    {
+        Type::registerType('custom_type', CustomType::class);
+
+        yield [Type::STRING, 'string'];
+        yield [Type::BINDATA, 'string'];
+        yield [Type::BINDATABYTEARRAY, 'string'];
+        yield [Type::BINDATACUSTOM, 'string'];
+        yield [Type::BINDATAFUNC, 'string'];
+        yield [Type::BINDATAUUID, 'string'];
+        yield [Type::BINDATAUUIDRFC4122, 'string'];
+        yield [Type::DECIMAL128, 'string'];
+        yield [Type::ID, 'string'];
+        yield [Type::TIMESTAMP, 'string'];
+        yield [Type::INT, 'int'];
+        yield [Type::FLOAT, 'float'];
+        yield [Type::HASH, 'array'];
+        yield [Type::COLLECTION, 'array'];
+        yield [Type::OBJECTID, 'array'];
+        yield [Type::VECTOR_FLOAT32, 'array'];
+        yield [Type::VECTOR_INT8, 'array'];
+        yield [Type::VECTOR_PACKED_BIT, 'array'];
+        yield [Type::DATE, '\\' . DateTime::class];
+        yield [Type::DATE_IMMUTABLE, '\\' . DateTimeImmutable::class];
+        yield [Type::UUID, '\\' . Uuid::class];
+        yield ['unknown_type', null];
+        yield [Type::RAW, null];
+        yield ['custom_type', 'string'];
+    }
+
+    public function testGetTypeConstant(): void
+    {
+        $this->assertSame('Type::STRING', MongoDBHelper::getTypeConstant(Type::STRING));
+        $this->assertNull(MongoDBHelper::getTypeConstant('unknown_type'));
+    }
+}
+
+class CustomType extends Type
+{
+    public function convertToPHPValue(mixed $value): string
+    {
+        return 'foo';
     }
 }
