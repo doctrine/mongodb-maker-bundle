@@ -16,7 +16,11 @@
     <file>tests/BundleTest.php</file>
     <file>tests/Maker</file>
 
-    <rule ref="Doctrine" />
+    <rule ref="Doctrine">
+        <!-- Allow short nullable syntax for non-union types -->
+        <exclude name="SlevomatCodingStandard.TypeHints.UnionTypeHintFormat.DisallowedShortNullable" />
+        <exclude name="SlevomatCodingStandard.TypeHints.DNFTypeHintFormat.DisallowedShortNullable" />
+    </rule>
     <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingNativeTypeHint" />
     <rule ref="PSR2.Classes.PropertyDeclaration.ScopeMissing" />
 

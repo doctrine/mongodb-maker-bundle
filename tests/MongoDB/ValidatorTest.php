@@ -30,7 +30,7 @@ class ValidatorTest extends TestCase
     }
 
     #[DataProvider('invalidNotBlankProvider')]
-    public function testNotBlankWithInvalidValue(string|null $value): void
+    public function testNotBlankWithInvalidValue(?string $value): void
     {
         $this->expectException(RuntimeCommandException::class);
         $this->expectExceptionMessage('This value cannot be blank.');
@@ -38,7 +38,7 @@ class ValidatorTest extends TestCase
         Validator::notBlank($value);
     }
 
-    /** @return Generator<string, array{0: string|null}> */
+    /** @return Generator<string, array{0: ?string}> */
     public static function invalidNotBlankProvider(): Generator
     {
         yield 'null' => [null];
@@ -76,7 +76,7 @@ class ValidatorTest extends TestCase
         Validator::validateFieldName($fieldName);
     }
 
-    /** @return Generator<string, array{0: string|null}> */
+    /** @return Generator<string, array{0: ?string}> */
     public static function emptyFieldNameProvider(): Generator
     {
         yield 'empty string' => [''];
