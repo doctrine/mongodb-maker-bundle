@@ -50,8 +50,8 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
     public function __construct(
         private FileManager $fileManager,
         private MongoDBHelper $mongoDBHelper,
-        private Generator|null $generator = null,
-        private DocumentClassGenerator|null $documentClassGenerator = null,
+        private ?Generator $generator = null,
+        private ?DocumentClassGenerator $documentClassGenerator = null,
     ) {
         $this->generator              ??= new Generator($fileManager, 'App\\');
         $this->documentClassGenerator ??= new DocumentClassGenerator($this->generator, $this->mongoDBHelper);
@@ -176,7 +176,7 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
         ]);
     }
 
-    public function configureDependencies(DependencyBuilder $dependencies, InputInterface|null $input = null): void
+    public function configureDependencies(DependencyBuilder $dependencies, ?InputInterface $input = null): void
     {
         $dependencies->addClassDependency(
             DoctrineMongoDBBundle::class,
@@ -185,7 +185,7 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
     }
 
     /** @param string[] $fields */
-    private function askForNextField(ConsoleStyle $io, array $fields, string $documentClass, bool $isFirstField): ClassProperty|null
+    private function askForNextField(ConsoleStyle $io, array $fields, string $documentClass, bool $isFirstField): ?ClassProperty
     {
         $io->writeln('');
 

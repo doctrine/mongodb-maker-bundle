@@ -16,7 +16,7 @@ final class Validator
     /**
      * Validates that a value is not blank.
      */
-    public static function notBlank(string|null $value = null): string
+    public static function notBlank(?string $value = null): string
     {
         if ($value === null || $value === '') {
             throw new RuntimeCommandException('This value cannot be blank.');
