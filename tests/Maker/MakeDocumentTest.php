@@ -65,6 +65,36 @@ class MakeDocumentTest extends MakerTestCase
                 self::runDocumentTest($runner);
             }),
         ];
+
+        yield 'it_creates_a_new_class_with_fields' => [
+            self::createMakeDocumentTest()
+            ->run(static function (MakerTestRunner $runner): void {
+                $runner->runMaker([
+                    // document class name
+                    'User',
+                    // additional fields
+                    'some_id',
+                    'uuid',
+                    'y',
+                    'firstName',
+                    'string',
+                    'n',
+                    'isActive',
+                    'bool',
+                    'n',
+                    'friends',
+                    'collection',
+                    'n',
+                    '',
+                ]);
+
+                self::runDocumentTest($runner, [
+                    'firstName' => 'Pauline',
+                    'isActive' => true,
+                    'friends' => ['Alice', 'Bob'],
+                ]);
+            }),
+        ];
     }
 
     /** @param array<string, mixed> $data */

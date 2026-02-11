@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Doctrine\Bundle\MongoDBMakerBundle\Maker;
 
 use Doctrine\Bundle\MongoDBBundle\DoctrineMongoDBBundle;
+use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\ClassSourceManipulator;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\DocumentClassGenerator;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\MongoDBHelper;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\Validator;
@@ -23,7 +24,6 @@ use Symfony\Bundle\MakerBundle\Maker\Common\UidTrait;
 use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Bundle\MakerBundle\Util\ClassDetails;
 use Symfony\Bundle\MakerBundle\Util\ClassSource\Model\ClassProperty;
-use Symfony\Bundle\MakerBundle\Util\ClassSourceManipulator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -152,7 +152,7 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
         }
 
         $currentFields = $this->getPropertyNames($documentClassDetails->getFullName());
-        $manipulator   = $this->createClassManipulator($documentPath, $io, $overwrite);
+        $manipulator   = $this->createClassManipulator($documentPath, $io);
 
         $isFirstField = true;
         while (true) {
@@ -163,7 +163,7 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
                 break;
             }
 
-            $manipulator->addEntityField($newField);
+            $manipulator->addDocumentField($newField);
             $currentFields[] = $newField->propertyName;
 
             $this->fileManager->dumpFile($documentPath, $manipulator->getSourceCode());
@@ -351,11 +351,10 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
         return $matches;
     }
 
-    private function createClassManipulator(string $path, ConsoleStyle $io, bool $overwrite): ClassSourceManipulator
+    private function createClassManipulator(string $path, ConsoleStyle $io): ClassSourceManipulator
     {
         $manipulator = new ClassSourceManipulator(
             sourceCode: $this->fileManager->getFileContents($path),
-            overwrite: $overwrite,
         );
 
         $manipulator->setIo($io);

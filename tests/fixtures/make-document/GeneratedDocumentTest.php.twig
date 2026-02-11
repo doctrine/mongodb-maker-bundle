@@ -23,7 +23,7 @@ class GeneratedDocumentTest extends KernelTestCase
 
         $user = new User();
         {% for field, value in data %}
-            $user->{{ field }} = '{{ value }}';
+            $user->{{ field }} = {{ value|json_encode|raw }};
         {% endfor %}
         $dm->persist($user);
         $dm->flush();

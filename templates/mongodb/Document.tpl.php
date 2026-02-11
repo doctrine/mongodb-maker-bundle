@@ -14,27 +14,12 @@ class <?= $class_name."\n" ?>
 {
 <?php if (EntityIdTypeEnum::UUID === $id_type): ?>
     #[ODM\Id(strategy: 'UUID')]
-    private ?string $id = null;
-
-    public function getId(): ?string
-    {
-        return $this->id;
-    }
+    public ?string $id = null;
 <?php elseif (EntityIdTypeEnum::ULID === $id_type): ?>
     #[ODM\Id(strategy: 'UUID')]
-    private ?string $id = null;
-
-    public function getId(): ?string
-    {
-        return $this->id;
-    }
+    public ?string $id = null;
 <?php else: ?>
     #[ODM\Id]
-    private ?string $id = null;
-
-    public function getId(): ?string
-    {
-        return $this->id;
-    }
+    public ?string $id = null;
 <?php endif ?>
 }
