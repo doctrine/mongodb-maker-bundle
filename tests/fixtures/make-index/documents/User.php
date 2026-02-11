@@ -9,9 +9,12 @@ use Doctrine\ODM\MongoDB\Mapping\Attribute as ODM;
 #[ODM\Document]
 class User
 {
+    #[ODM\Field]
+    public ?string $firstName = null;
+
     #[ODM\Id]
     public ?int $id = null;
 
     #[ODM\Field]
-    public ?string $firstName = null;
+    public ?string $lastName = null;
 }

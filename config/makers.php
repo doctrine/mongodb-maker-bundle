@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
 use Doctrine\Bundle\MongoDBMakerBundle\Maker\MakeDocument;
+use Doctrine\Bundle\MongoDBMakerBundle\Maker\MakeIndex;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\DocumentClassGenerator;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\MongoDBHelper;
 
@@ -37,6 +38,13 @@ return static function (ContainerConfigurator $container): void {
             service('doctrine_mongodb_maker.mongodb_helper'),
             service('maker.generator'),
             service('doctrine_mongodb_maker.document_class_generator'),
+        ])
+        ->tag('maker.command');
+
+    $services->set('doctrine_mongodb_maker.maker.make_index', MakeIndex::class)
+        ->args([
+            service('maker.file_manager'),
+            service('doctrine_mongodb_maker.mongodb_helper'),
         ])
         ->tag('maker.command');
 };
