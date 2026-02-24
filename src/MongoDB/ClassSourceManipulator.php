@@ -4,7 +4,13 @@ declare(strict_types=1);
 
 namespace Doctrine\Bundle\MongoDBMakerBundle\MongoDB;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\ODM\MongoDB\Mapping\Attribute\EmbedMany;
+use Doctrine\ODM\MongoDB\Mapping\Attribute\EmbedOne;
 use Doctrine\ODM\MongoDB\Mapping\Attribute\Field;
+use Doctrine\ODM\MongoDB\Mapping\Attribute\ReferenceMany;
+use Doctrine\ODM\MongoDB\Mapping\Attribute\ReferenceOne;
 use Doctrine\ODM\MongoDB\Types\Type;
 use Exception;
 use PhpParser\Builder;
@@ -18,7 +24,6 @@ use PhpParser\Token;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionParameter;
-use Symfony\Bundle\MakerBundle\ConsoleStyle;
 use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Bundle\MakerBundle\Util\ClassNameValue;
 use Symfony\Bundle\MakerBundle\Util\ClassSource\Model\ClassProperty;
@@ -55,8 +60,8 @@ final class ClassSourceManipulator
     private Parser $parser;
     private Lexer\Emulative $lexer;
     private PrettyPrinter $printer;
-    private ConsoleStyle|null $io = null;
 
+    /** @var Node\Stmt[]|null */
     private array|null $oldStmts = null;
 
     /** @var Token[] $oldTokens */
@@ -80,11 +85,6 @@ final class ClassSourceManipulator
         $this->printer = new PrettyPrinter();
 
         $this->setSourceCode($sourceCode);
-    }
-
-    public function setIo(ConsoleStyle $io): void
-    {
-        $this->io = $io;
     }
 
     public function getSourceCode(): string
@@ -146,6 +146,69 @@ final class ClassSourceManipulator
         );
     }
 
+    /** @param array<string, mixed> $options */
+    public function addReferenceOne(string $propertyName, string $targetClass, bool $nullable = true, array $options = []): void
+    {
+        $typeHint = $this->addUseStatementIfNecessary($targetClass);
+        if ($targetClass === $this->getThisFullClassName()) {
+            $typeHint = 'self';
+        }
+
+        $attributeOptions = ['targetDocument' => new ClassNameValue($typeHint, $targetClass)];
+
+        // Add inversedBy or mappedBy if provided
+        if (isset($options['inversedBy'])) {
+            $attributeOptions['inversedBy'] = $options['inversedBy'];
+        }
+
+        if (isset($options['mappedBy'])) {
+            $attributeOptions['mappedBy'] = $options['mappedBy'];
+        }
+
+        if (isset($options['cascade'])) {
+            $attributeOptions['cascade'] = $options['cascade'];
+        }
+
+        $attributes = [$this->buildAttributeNode(ReferenceOne::class, $attributeOptions, 'ODM')];
+
+        $propertyType = $nullable ? '?' . $typeHint : $typeHint;
+
+        $this->addSimpleProperty(
+            name: $propertyName,
+            defaultValue: $nullable ? null : false,
+            attributes: $attributes,
+            propertyType: $propertyType,
+        );
+    }
+
+    /** @param array<string, mixed> $options */
+    public function addReferenceMany(string $propertyName, string $targetClass, array $options = []): void
+    {
+        $this->addCollectionRelation($propertyName, $targetClass, ReferenceMany::class, $options);
+    }
+
+    public function addEmbedOne(string $propertyName, string $targetClass, bool $nullable = true): void
+    {
+        $typeHint = $this->addUseStatementIfNecessary($targetClass);
+
+        $attributeOptions = ['targetDocument' => new ClassNameValue($typeHint, $targetClass)];
+        $attributes       = [$this->buildAttributeNode(EmbedOne::class, $attributeOptions, 'ODM')];
+
+        $propertyType = $nullable ? '?' . $typeHint : $typeHint;
+
+        $this->addSimpleProperty(
+            name: $propertyName,
+            defaultValue: $nullable ? null : false,
+            attributes: $attributes,
+            propertyType: $propertyType,
+        );
+    }
+
+    public function addEmbedMany(string $propertyName, string $targetClass): void
+    {
+        $this->addCollectionRelation($propertyName, $targetClass, EmbedMany::class, []);
+    }
+
     /**
      * @param array<Node\Attribute|Node\AttributeGroup> $attributes
      * @param string[]                                  $comments
@@ -181,6 +244,188 @@ final class ClassSourceManipulator
         $newPropertyNode = $newPropertyBuilder->getNode();
 
         $this->addNodeAfterProperties($newPropertyNode);
+    }
+
+    /**
+     * Add a simple property (for relations)
+     *
+     * @param array<Node\Attribute|Node\AttributeGroup> $attributes
+     */
+    private function addSimpleProperty(string $name, mixed $defaultValue, array $attributes = [], string|null $propertyType = null): void
+    {
+        if ($this->propertyExists($name)) {
+            // we never overwrite properties
+            return;
+        }
+
+        $newPropertyBuilder = (new Builder\Property($name))->makePublic();
+
+        if ($propertyType !== null) {
+            $newPropertyBuilder->setType($propertyType);
+        }
+
+        if ($this->useAttributesForDoctrineMapping) {
+            foreach ($attributes as $attribute) {
+                $newPropertyBuilder->addAttribute($attribute);
+            }
+        }
+
+        // Only set default value if it's actually provided (null is a valid value)
+        if ($defaultValue !== false) {
+            $newPropertyBuilder->setDefault($defaultValue);
+        }
+
+        $newPropertyNode = $newPropertyBuilder->getNode();
+
+        $this->addNodeAfterProperties($newPropertyNode);
+    }
+
+    /**
+     * Add a collection relation (ReferenceMany or EmbedMany)
+     *
+     * @param string               $attributeClass ReferenceMany::class or EmbedMany::class
+     * @param array<string, mixed> $options
+     */
+    private function addCollectionRelation(string $propertyName, string $targetClass, string $attributeClass, array $options): void
+    {
+        $typeHint                = $this->addUseStatementIfNecessary($targetClass);
+        $arrayCollectionTypeHint = $this->addUseStatementIfNecessary(ArrayCollection::class);
+        $collectionTypeHint      = $this->addUseStatementIfNecessary(Collection::class);
+
+        $attributeOptions = ['targetDocument' => new ClassNameValue($typeHint, $targetClass)];
+
+        // Add inversedBy or mappedBy if provided
+        if (isset($options['inversedBy'])) {
+            $attributeOptions['inversedBy'] = $options['inversedBy'];
+        }
+
+        if (isset($options['mappedBy'])) {
+            $attributeOptions['mappedBy'] = $options['mappedBy'];
+        }
+
+        if (isset($options['cascade'])) {
+            $attributeOptions['cascade'] = $options['cascade'];
+        }
+
+        if (isset($options['orphanRemoval']) && $options['orphanRemoval']) {
+            $attributeOptions['orphanRemoval'] = true;
+        }
+
+        if (isset($options['sort'])) {
+            $attributeOptions['sort'] = $options['sort'];
+        }
+
+        $attributes = [$this->buildAttributeNode($attributeClass, $attributeOptions, 'ODM')];
+
+        // Use public private(set) for collections
+        $this->addCollectionProperty(
+            name: $propertyName,
+            attributes: $attributes,
+            collectionTypeHint: $collectionTypeHint,
+            typeHint: $typeHint,
+        );
+
+        // Add initialization to constructor
+        $this->addCollectionInitialization($propertyName, $arrayCollectionTypeHint);
+    }
+
+    /**
+     * Add a collection property with public private(set) visibility
+     *
+     * @param array<Node\Attribute|Node\AttributeGroup> $attributes
+     */
+    private function addCollectionProperty(string $name, array $attributes, string $collectionTypeHint, string $typeHint): void
+    {
+        if ($this->propertyExists($name)) {
+            return;
+        }
+
+        $newPropertyBuilder = (new Builder\Property($name))->makePrivateSet();
+        $newPropertyBuilder->setType($collectionTypeHint);
+        $newPropertyBuilder->setDocComment(sprintf('/** @var %s<array-key, %s> */', $collectionTypeHint, $typeHint));
+
+        if ($this->useAttributesForDoctrineMapping) {
+            foreach ($attributes as $attribute) {
+                $newPropertyBuilder->addAttribute($attribute);
+            }
+        }
+
+        // Create the property node
+        $newPropertyNode = $newPropertyBuilder->getNode();
+
+        $this->addNodeAfterProperties($newPropertyNode);
+    }
+
+    /**
+     * Add collection initialization to constructor
+     */
+    private function addCollectionInitialization(string $propertyName, string $arrayCollectionTypeHint): void
+    {
+        // Check if constructor already initializes this collection
+        $constructorNode = $this->getConstructorNode();
+
+        if ($constructorNode) {
+            $constructorString = $this->printer->prettyPrint([$constructorNode]);
+            if (str_contains($constructorString, sprintf('$this->%s = ', $propertyName))) {
+                // Already initialized
+                return;
+            }
+        }
+
+        $this->addStatementToConstructor(
+            new Node\Stmt\Expression(new Node\Expr\Assign(
+                new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), $propertyName),
+                new Node\Expr\New_(new Node\Name($arrayCollectionTypeHint)),
+            )),
+        );
+    }
+
+    /**
+     * Add a statement to the constructor, creating it if needed
+     */
+    private function addStatementToConstructor(Node\Stmt $stmt): void
+    {
+        $constructorNode = $this->getConstructorNode();
+
+        if ($constructorNode === null) {
+            $constructorNode = (new Builder\Method('__construct'))
+                ->makePublic()
+                ->addStmt($stmt)
+                ->getNode();
+
+            $this->addNodeAfterProperties($constructorNode);
+            $this->updateSourceCodeFromNewStmts();
+
+            return;
+        }
+
+        $constructorNode->stmts[] = $stmt;
+        $this->updateSourceCodeFromNewStmts();
+    }
+
+    /**
+     * Get the constructor node if it exists
+     */
+    private function getConstructorNode(): Node\Stmt\ClassMethod|null
+    {
+        foreach ($this->getClassNode()->stmts as $node) {
+            if ($node instanceof Node\Stmt\ClassMethod && $node->name->toString() === '__construct') {
+                return $node;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the full class name of the current class
+     */
+    private function getThisFullClassName(): string
+    {
+        $namespace = $this->getNamespaceNode()->name->toCodeString();
+        $className = $this->getClassNode()->name->toString();
+
+        return $namespace . '\\' . $className;
     }
 
     /** @return string The alias to use when referencing this class */

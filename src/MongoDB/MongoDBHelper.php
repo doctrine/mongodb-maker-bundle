@@ -7,23 +7,30 @@ namespace Doctrine\Bundle\MongoDBMakerBundle\MongoDB;
 use DateTime;
 use DateTimeImmutable;
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Types\Type;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\Persistence\Mapping\AbstractClassMetadataFactory;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionNamedType;
 use Symfony\Bundle\MakerBundle\Str;
+use Symfony\Bundle\MakerBundle\Util\ClassNameDetails;
 use Symfony\Component\Uid\Uuid;
+use Throwable;
 
 use function array_first;
 use function array_flip;
 use function array_keys;
 use function array_pop;
+use function assert;
 use function count;
 use function explode;
 use function implode;
+use function sort;
 use function sprintf;
 use function str_contains;
+use function str_starts_with;
 
 /** @internal */
 final class MongoDBHelper
@@ -84,28 +91,66 @@ final class MongoDBHelper
         return array_first($namespaces) ?? self::DEFAULT_DOCUMENT_NAMESPACE;
     }
 
+    /** @return array<ClassMetadata<object>> */
+    public function getMetadata(string|null $classOrNamespace = null, bool $disconnected = false): array
+    {
+        $metadata = [];
+
+        foreach ($this->registry->getManagers() as $dm) {
+            assert($dm instanceof DocumentManager);
+            $cmf = $dm->getMetadataFactory();
+            assert($cmf instanceof AbstractClassMetadataFactory);
+
+            if ($disconnected) {
+                try {
+                    $loaded = $cmf->getAllMetadata();
+                } catch (Throwable) {
+                    $loaded = [];
+                }
+
+                // Set the reflection service for disconnected mode
+                $cmf->setReflectionService(new StaticReflectionService());
+
+                foreach ($loaded as $classMetadata) {
+                    $cmf->setMetadataFor($classMetadata->getName(), $classMetadata);
+                }
+            }
+
+            foreach ($cmf->getAllMetadata() as $classMetadata) {
+                if ($classOrNamespace === null) {
+                    $metadata[$classMetadata->getName()] = $classMetadata;
+                } else {
+                    // Exact match
+                    if ($classMetadata->getName() === $classOrNamespace) {
+                        return [$classMetadata->getName() => $classMetadata];
+                    }
+
+                    if (str_starts_with($classMetadata->getName(), $classOrNamespace)) {
+                        $metadata[$classMetadata->getName()] = $classMetadata;
+                    }
+                }
+            }
+        }
+
+        return $metadata;
+    }
+
     /** @return string[] */
     public function getDocumentsForAutocomplete(): array
     {
-        $documentManager = $this->registry->getManager();
+        $documents         = [];
+        $documentNamespace = $this->getDocumentNamespace();
 
-        if (! $documentManager instanceof DocumentManager) {
-            return [];
+        $allMetadata = $this->getMetadata();
+
+        foreach (array_keys($allMetadata) as $classname) {
+            $documentClassDetails = new ClassNameDetails($classname, $documentNamespace);
+            $documents[]          = $documentClassDetails->getRelativeName();
         }
 
-        $metadataDriver = $documentManager->getConfiguration()->getMetadataDriverImpl();
-        $allDocuments   = [];
+        sort($documents);
 
-        if ($metadataDriver === null) {
-            return [];
-        }
-
-        foreach ($metadataDriver->getAllClassNames() as $className) {
-            $allDocuments[] = $className;
-            $allDocuments[] = Str::getShortClassName($className);
-        }
-
-        return $allDocuments;
+        return $documents;
     }
 
     public static function canFieldTypeBeInferredByPropertyType(string $fieldType, string $propertyType): bool
