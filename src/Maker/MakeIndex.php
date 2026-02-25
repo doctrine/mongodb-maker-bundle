@@ -36,14 +36,11 @@ use function array_values;
 use function class_exists;
 use function count;
 use function dirname;
-use function explode;
 use function file_get_contents;
 use function in_array;
-use function is_numeric;
 use function preg_match;
 use function sprintf;
 use function strtolower;
-use function trim;
 
 final class MakeIndex extends AbstractMaker implements MakerInterface
 {
@@ -216,72 +213,21 @@ final class MakeIndex extends AbstractMaker implements MakerInterface
     {
         $question = new ChoiceQuestion('Select one or more keys for the index (or <return> to finish)', $fields);
         $question->setMultiselect(true);
-        $question->setValidator(static function ($answer) use ($fields) {
-            return self::validateKeyInput($fields, $answer);
-        });
 
         $selection = $io->askQuestion($question);
 
         $keys = [];
 
         foreach ($selection as $key) {
-            $orderQuestion = new Question(
+            $orderQuestion = new ChoiceQuestion(
                 sprintf('Provide the order for key "%s"', $key),
+                ['asc', 'desc'],
                 'asc',
             );
-            $orderQuestion->setAutocompleterValues(['asc', 'desc']);
-            $orderQuestion->setValidator(self::validateOrderInput(...));
 
             $keys[$key] = $io->askQuestion($orderQuestion);
         }
 
         return $keys;
-    }
-
-    /**
-     * @param string[] $fields
-     *
-     * @return string[]
-     */
-    private static function validateKeyInput(array $fields, string $value): array
-    {
-        Validator::notBlank(trim($value));
-
-        return array_map(
-            static function (string $key) use ($fields) {
-                $message = sprintf(
-                    'Invalid input "%s".',
-                    $key,
-                );
-
-                if (! is_numeric(trim($key))) {
-                    throw new InvalidArgumentException(
-                        $message . ' Please enter a comma-separated list of numbers corresponding to the keys you want to index, e.g.: "0,1".',
-                    );
-                }
-
-                $index = (int) trim($key);
-
-                if ($index < 0 || $index >= count($fields)) {
-                    throw new InvalidArgumentException(
-                        $message . ' Please enter only numbers corresponding to a field.',
-                    );
-                }
-
-                return $fields[$index];
-            },
-            explode(',', $value),
-        );
-    }
-
-    private static function validateOrderInput(string $value): string
-    {
-        $value = strtolower(trim($value));
-
-        if (! in_array($value, ['asc', 'desc'], true)) {
-            throw new InvalidArgumentException('Please enter "asc" or "desc".');
-        }
-
-        return $value;
     }
 }
