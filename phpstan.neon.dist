@@ -6,6 +6,7 @@ parameters:
         - tests
     excludePaths:
         - tests/tmp
+        - tests/fixtures/utils/MongoDBFunctionalTestCase.php
 
     ignoreErrors:
         - identifier: class.notFound
