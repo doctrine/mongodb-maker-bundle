@@ -37,6 +37,7 @@ use function array_search;
 use function array_splice;
 use function array_unshift;
 use function array_values;
+use function assert;
 use function end;
 use function get_debug_type;
 use function gettype;
@@ -428,6 +429,39 @@ final class ClassSourceManipulator
         return $namespace . '\\' . $className;
     }
 
+    /**
+     * @param array<string,mixed> $options
+     *
+     * @throws Exception
+     */
+    public function addAttributeToProperty(string $attributeClass, string $property, array $options): void
+    {
+        $this->addUseStatementIfNecessary($attributeClass);
+
+        $propertyNode    = $this->getPropertyNode($property);
+        $attributePrefix = str_starts_with($attributeClass, 'ODM\\') ? 'ODM' : null;
+
+        $propertyNode->attrGroups[] = new Node\AttributeGroup([
+            $this->buildAttributeNode($attributeClass, $options, $attributePrefix),
+        ]);
+
+        $this->updateSourceCodeFromNewStmts();
+    }
+
+    /** @param array<string,mixed> $options */
+    public function addAttributeToClass(string $attributeClass, array $options): void
+    {
+        $this->addUseStatementIfNecessary($attributeClass);
+
+        $classNode = $this->getClassNode();
+
+        $attributePrefix = str_starts_with($attributeClass, 'ODM\\') ? 'ODM' : null;
+
+        $classNode->attrGroups[] = new Node\AttributeGroup([$this->buildAttributeNode($attributeClass, $options, $attributePrefix)]);
+
+        $this->updateSourceCodeFromNewStmts();
+    }
+
     /** @return string The alias to use when referencing this class */
     public function addUseStatementIfNecessary(string $class): string
     {
@@ -607,9 +641,34 @@ final class ClassSourceManipulator
     private function getClassNode(): Node\Stmt\Class_
     {
         $node = $this->findFirstNode(static fn ($node) => $node instanceof Node\Stmt\Class_);
+        assert($node instanceof Node\Stmt\Class_);
 
         if (! $node) {
             throw new Exception('Could not find class node');
+        }
+
+        return $node;
+    }
+
+    private function getPropertyNode(string $propertyName): Node\Stmt\Property
+    {
+        $node = $this->findFirstNode(static function ($node) use ($propertyName): bool {
+            if (! $node instanceof Node\Stmt\Property) {
+                return false;
+            }
+
+            foreach ($node->props as $prop) {
+                if ($prop->name->toString() === $propertyName) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+        assert($node instanceof Node\Stmt\Property);
+
+        if (! $node) {
+            throw new Exception(sprintf('Could not find property node "%s"', $propertyName));
         }
 
         return $node;
@@ -812,7 +871,7 @@ final class ClassSourceManipulator
     private function sortOptionsByClassConstructorParameters(array $options, string $classString): array
     {
         if (str_starts_with($classString, 'ODM\\')) {
-            $classString = sprintf('Doctrine\\ODM\\MongoDB\\Mapping\\%s', substr($classString, 4));
+            $classString = sprintf('Doctrine\\ODM\\MongoDB\\Mapping\\Attribute\\%s', substr($classString, 4));
         }
 
         $constructorParameterNames = array_map(static fn (ReflectionParameter $reflectionParameter) => $reflectionParameter->getName(), (new ReflectionClass($classString))->getConstructor()->getParameters());

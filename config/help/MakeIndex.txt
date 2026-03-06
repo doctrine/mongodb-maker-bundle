@@ -1,0 +1,3 @@
+The <info>%command.name%</info> command adds an index to an existing document class.
+
+<info>php %command.full_name% BlogPost</info>
