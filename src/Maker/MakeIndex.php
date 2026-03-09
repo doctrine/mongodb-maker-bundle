@@ -135,6 +135,13 @@ final class MakeIndex extends AbstractMaker implements MakerInterface
             return $isId ? null : $prop->getName();
         }, $reflectionClass->getProperties())));
 
+        if (empty($fields)) {
+            throw new Exception(sprintf(
+                'Document "%s" does not have any fields that can be indexed. Please add some fields before running this command.',
+                $documentName,
+            ));
+        }
+
         $manipulator = new ClassSourceManipulator(
             sourceCode: $this->fileManager->getFileContents($documentPath),
         );
