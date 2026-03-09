@@ -7,7 +7,6 @@ namespace Doctrine\Bundle\MongoDBMakerBundle\Maker;
 use Doctrine\Bundle\MongoDBBundle\DoctrineMongoDBBundle;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\ClassSourceManipulator;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\MongoDBHelper;
-use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\Validator;
 use Doctrine\ODM\MongoDB\Mapping\Attribute\Id;
 use Exception;
 use InvalidArgumentException;
@@ -20,14 +19,12 @@ use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\InputConfiguration;
 use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
 use Symfony\Bundle\MakerBundle\MakerInterface;
-use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Bundle\MakerBundle\Util\ClassDetails;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
-use Symfony\Component\Console\Question\Question;
 
 use function array_filter;
 use function array_key_first;
@@ -60,7 +57,7 @@ final class MakeIndex extends AbstractMaker implements MakerInterface
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $command
-            ->addArgument(self::ARG_DOCUMENT, InputArgument::OPTIONAL, sprintf('Class name of the document to create the index for (e.g. <fg=yellow>%s</>)', Str::asClassName(Str::getRandomTerm())))
+            ->addArgument(self::ARG_DOCUMENT, InputArgument::OPTIONAL, 'The document class to create the index for')
             ->setHelp((string) file_get_contents(dirname(__DIR__, 2) . '/config/help/MakeIndex.txt'));
 
         $inputConfig->setArgumentAsNonInteractive(self::ARG_DOCUMENT);
@@ -81,28 +78,15 @@ final class MakeIndex extends AbstractMaker implements MakerInterface
             return;
         }
 
-        $argument            = $command->getDefinition()->getArgument(self::ARG_DOCUMENT);
-        $question            = $this->createDocumentClassQuestion($argument->getDescription());
-        $documentClassName ??= $io->askQuestion($question);
+        $argument = $command->getDefinition()->getArgument(self::ARG_DOCUMENT);
+        $question = new ChoiceQuestion(
+            $argument->getDescription(),
+            $this->mongoDBHelper->getDocumentsForAutocomplete(),
+        );
 
-        while ($this->verifyDocumentName($documentClassName)) {
-            if ($io->confirm(sprintf('"%s" contains one or more non-ASCII characters, which can be problematic with MongoDB. It is recommended to use only ASCII characters for document names. Continue anyway?', $documentClassName), false)) {
-                break;
-            }
-
-            $documentClassName = $io->askQuestion($question);
-        }
+        $documentClassName = $io->askQuestion($question);
 
         $input->setArgument(self::ARG_DOCUMENT, $documentClassName);
-    }
-
-    private function createDocumentClassQuestion(string $questionText): Question
-    {
-        $question = new Question($questionText);
-        $question->setValidator(Validator::notBlank(...));
-        $question->setAutocompleterValues($this->mongoDBHelper->getDocumentsForAutocomplete());
-
-        return $question;
     }
 
     /** @throws Exception */
