@@ -7,7 +7,6 @@ namespace Doctrine\Bundle\MongoDBMakerBundle\Maker;
 use Doctrine\Bundle\MongoDBBundle\DoctrineMongoDBBundle;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\ClassSourceManipulator;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\MongoDBHelper;
-use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\Validator;
 use Doctrine\ODM\MongoDB\Mapping\Attribute\Id;
 use Exception;
 use InvalidArgumentException;
@@ -20,14 +19,12 @@ use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Bundle\MakerBundle\InputConfiguration;
 use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
 use Symfony\Bundle\MakerBundle\MakerInterface;
-use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Bundle\MakerBundle\Util\ClassDetails;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
-use Symfony\Component\Console\Question\Question;
 
 use function array_filter;
 use function array_key_first;
@@ -36,14 +33,11 @@ use function array_values;
 use function class_exists;
 use function count;
 use function dirname;
-use function explode;
 use function file_get_contents;
 use function in_array;
-use function is_numeric;
 use function preg_match;
 use function sprintf;
 use function strtolower;
-use function trim;
 
 final class MakeIndex extends AbstractMaker implements MakerInterface
 {
@@ -63,7 +57,7 @@ final class MakeIndex extends AbstractMaker implements MakerInterface
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $command
-            ->addArgument(self::ARG_DOCUMENT, InputArgument::OPTIONAL, sprintf('Class name of the document to create the index for (e.g. <fg=yellow>%s</>)', Str::asClassName(Str::getRandomTerm())))
+            ->addArgument(self::ARG_DOCUMENT, InputArgument::OPTIONAL, 'The document class to create the index for')
             ->setHelp((string) file_get_contents(dirname(__DIR__, 2) . '/config/help/MakeIndex.txt'));
 
         $inputConfig->setArgumentAsNonInteractive(self::ARG_DOCUMENT);
@@ -84,28 +78,15 @@ final class MakeIndex extends AbstractMaker implements MakerInterface
             return;
         }
 
-        $argument            = $command->getDefinition()->getArgument(self::ARG_DOCUMENT);
-        $question            = $this->createDocumentClassQuestion($argument->getDescription());
-        $documentClassName ??= $io->askQuestion($question);
+        $argument = $command->getDefinition()->getArgument(self::ARG_DOCUMENT);
+        $question = new ChoiceQuestion(
+            $argument->getDescription(),
+            $this->mongoDBHelper->getDocumentsForAutocomplete(),
+        );
 
-        while ($this->verifyDocumentName($documentClassName)) {
-            if ($io->confirm(sprintf('"%s" contains one or more non-ASCII characters, which can be problematic with MongoDB. It is recommended to use only ASCII characters for document names. Continue anyway?', $documentClassName), false)) {
-                break;
-            }
-
-            $documentClassName = $io->askQuestion($question);
-        }
+        $documentClassName = $io->askQuestion($question);
 
         $input->setArgument(self::ARG_DOCUMENT, $documentClassName);
-    }
-
-    private function createDocumentClassQuestion(string $questionText): Question
-    {
-        $question = new Question($questionText);
-        $question->setValidator(Validator::notBlank(...));
-        $question->setAutocompleterValues($this->mongoDBHelper->getDocumentsForAutocomplete());
-
-        return $question;
     }
 
     /** @throws Exception */
@@ -137,6 +118,13 @@ final class MakeIndex extends AbstractMaker implements MakerInterface
 
             return $isId ? null : $prop->getName();
         }, $reflectionClass->getProperties())));
+
+        if (empty($fields)) {
+            throw new Exception(sprintf(
+                'Document "%s" does not have any fields that can be indexed. Please add some fields before running this command.',
+                $documentName,
+            ));
+        }
 
         $manipulator = new ClassSourceManipulator(
             sourceCode: $this->fileManager->getFileContents($documentPath),
@@ -216,72 +204,21 @@ final class MakeIndex extends AbstractMaker implements MakerInterface
     {
         $question = new ChoiceQuestion('Select one or more keys for the index (or <return> to finish)', $fields);
         $question->setMultiselect(true);
-        $question->setValidator(static function ($answer) use ($fields) {
-            return self::validateKeyInput($fields, $answer);
-        });
 
         $selection = $io->askQuestion($question);
 
         $keys = [];
 
         foreach ($selection as $key) {
-            $orderQuestion = new Question(
+            $orderQuestion = new ChoiceQuestion(
                 sprintf('Provide the order for key "%s"', $key),
+                ['asc', 'desc'],
                 'asc',
             );
-            $orderQuestion->setAutocompleterValues(['asc', 'desc']);
-            $orderQuestion->setValidator(self::validateOrderInput(...));
 
             $keys[$key] = $io->askQuestion($orderQuestion);
         }
 
         return $keys;
-    }
-
-    /**
-     * @param string[] $fields
-     *
-     * @return string[]
-     */
-    private static function validateKeyInput(array $fields, string $value): array
-    {
-        Validator::notBlank(trim($value));
-
-        return array_map(
-            static function (string $key) use ($fields) {
-                $message = sprintf(
-                    'Invalid input "%s".',
-                    $key,
-                );
-
-                if (! is_numeric(trim($key))) {
-                    throw new InvalidArgumentException(
-                        $message . ' Please enter a comma-separated list of numbers corresponding to the keys you want to index, e.g.: "0,1".',
-                    );
-                }
-
-                $index = (int) trim($key);
-
-                if ($index < 0 || $index >= count($fields)) {
-                    throw new InvalidArgumentException(
-                        $message . ' Please enter only numbers corresponding to a field.',
-                    );
-                }
-
-                return $fields[$index];
-            },
-            explode(',', $value),
-        );
-    }
-
-    private static function validateOrderInput(string $value): string
-    {
-        $value = strtolower(trim($value));
-
-        if (! in_array($value, ['asc', 'desc'], true)) {
-            throw new InvalidArgumentException('Please enter "asc" or "desc".');
-        }
-
-        return $value;
     }
 }
