@@ -652,7 +652,7 @@ final class ClassSourceManipulator
     {
         $this->sourceCode = $sourceCode;
 
-        $this->oldStmts   = $this->parser->parse($sourceCode);
+        $this->oldStmts = $this->parser->parse($sourceCode);
 
         $this->oldTokens = $this->parser->getTokens();
 

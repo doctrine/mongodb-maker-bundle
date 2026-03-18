@@ -32,6 +32,7 @@ use function array_map;
 use function array_pop;
 use function array_unique;
 use function assert;
+use function class_exists;
 use function count;
 use function explode;
 use function implode;

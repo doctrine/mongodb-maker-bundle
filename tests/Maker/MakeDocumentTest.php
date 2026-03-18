@@ -244,6 +244,28 @@ class MakeDocumentTest extends MakerTestCase
                 // TODO: Add relation assertions
             }),
         ];
+
+        yield 'it_creates_a_self_referencing_document' => [
+            self::createMakeDocumentTest()
+            ->run(static function (MakerTestRunner $runner): void {
+                $runner->runMaker([
+                    // document class name
+                    'User',
+                    // add name field
+                    'name',
+                    'string',
+                    'n',
+                    // add friends reference (self-referencing ReferenceMany)
+                    'friends',
+                    'ReferenceMany',
+                    'User',
+                    'y', // map inverse
+                    'friendOf', // mapped by (arbitrary, for test)
+                    'n', // orphan removal
+                    '',
+                ]);
+            }),
+        ];
     }
 
     /** @param array<string, mixed> $data */

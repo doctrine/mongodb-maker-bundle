@@ -39,6 +39,7 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function assert;
 use function class_exists;
 use function dirname;
 use function file_get_contents;
@@ -145,6 +146,9 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
             );
 
             $generator->writeChanges();
+
+            require_once $documentPath;
+
             $io->text([
                 '',
                 'Document generated! Now let\'s add some fields!',
@@ -504,7 +508,7 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
         // ask the targetDocument
         $targetDocumentClass = null;
         while ($targetDocumentClass === null) {
-            $question = $this->createDocumentClassQuestion('What class should this document be related to?');
+            $question = $this->createDocumentClassQuestion('What class should this document be related to?', $generatedDocumentClass);
 
             $answeredDocumentClass = $io->askQuestion($question);
 
@@ -715,11 +719,16 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
         return $io->askQuestion($question);
     }
 
-    private function createDocumentClassQuestion(string $questionText): Question
+    private function createDocumentClassQuestion(string $questionText, ?string $currentDocument = null): Question
     {
+        $documentNames = array_merge(
+            $this->mongoDBHelper->getDocumentsForAutocomplete(),
+            $currentDocument ? [Str::getShortClassName($currentDocument)] : [],
+        );
+
         $question = new Question($questionText);
         $question->setValidator(Validator::notBlank(...));
-        $question->setAutocompleterValues($this->mongoDBHelper->getDocumentsForAutocomplete());
+        $question->setAutocompleterValues($documentNames);
 
         return $question;
     }
