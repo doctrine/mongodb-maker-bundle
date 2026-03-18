@@ -1,0 +1,133 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Possibly invalid array key type string\|null\.$#'
+			identifier: offsetAccess.invalidOffset
+			count: 1
+			path: src/Maker/MakeIndex.php
+
+		-
+			message: '#^Binary operation "\+" between int\|string and 1 results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Binary operation "\+" between int\|string\|false and 1 results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Cannot call method getParameters\(\) on ReflectionMethod\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Cannot call method toCodeString\(\) on PhpParser\\Node\\Name\|null\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Cannot call method toString\(\) on PhpParser\\Node\\Identifier\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Method Doctrine\\Bundle\\MongoDBMakerBundle\\MongoDB\\ClassSourceManipulator\:\:getNamespaceNode\(\) should return PhpParser\\Node\\Stmt\\Namespace_ but returns PhpParser\\Node\.$#'
+			identifier: return.type
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 2
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Parameter \#1 \$haystack of function str_contains expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Parameter \#1 \$nodes of method PhpParser\\NodeTraverser\:\:traverse\(\) expects array\<PhpParser\\Node\>, array\<PhpParser\\Node\\Stmt\>\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Parameter \#1 \$objectOrClass of class ReflectionClass constructor expects class\-string\<T of object\>\|T of object, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Parameter \#1 \$sourceCode of method Doctrine\\Bundle\\MongoDBMakerBundle\\MongoDB\\ClassSourceManipulator\:\:setSourceCode\(\) expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Parameter \#2 \$args of class PhpParser\\Node\\Attribute constructor expects list\<PhpParser\\Node\\Arg\>, list\<PhpParser\\Node\\Arg\|PhpParser\\Node\\NullableType\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Parameter \#2 \$origStmts of method PhpParser\\PrettyPrinterAbstract\:\:printFormatPreserving\(\) expects array\<PhpParser\\Node\>, array\<PhpParser\\Node\\Stmt\>\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Parameter \#3 \$length of function substr expects int\|null, int\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Parameter \#3 \$subject of function preg_replace expects array\<float\|int\|string\>\|string, string\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Parameter \#3 \$subject of function str_replace expects array\<string\>\|string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Property PhpParser\\Node\\Stmt\\ClassLike\:\:\$stmts \(array\<PhpParser\\Node\\Stmt\>\) does not accept array\<PhpParser\\Node\>\.$#'
+			identifier: assign.propertyType
+			count: 3
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Property PhpParser\\Node\\Stmt\\Namespace_\:\:\$stmts \(array\<PhpParser\\Node\\Stmt\>\) does not accept array\<PhpParser\\Node\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: src/MongoDB/ClassSourceManipulator.php
+
+		-
+			message: '#^Parameter \#1 \$classesToBeImported of class Symfony\\Bundle\\MakerBundle\\Util\\UseStatementGenerator constructor expects array\<string\>, array\<int, array\<string, string\>\|string\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/MongoDB/DocumentClassGenerator.php
+
+		-
+			message: '#^Parameter \#2 \$data of static method Doctrine\\Bundle\\MongoDBMakerBundle\\Tests\\Maker\\MakeIndexTest\:\:runIndexTest\(\) expects array\<string, mixed\>, array\<int, array\<string, array\<string, int\>\|bool\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/Maker/MakeIndexTest.php
+
+		-
+			message: '#^Parameter \#2 \$data of static method Doctrine\\Bundle\\MongoDBMakerBundle\\Tests\\Maker\\MakeIndexTest\:\:runIndexTest\(\) expects array\<string, mixed\>, array\<int, array\<string, array\<string, int\>\|false\>\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: tests/Maker/MakeIndexTest.php
