@@ -462,6 +462,29 @@ final class ClassSourceManipulator
         $this->updateSourceCodeFromNewStmts();
     }
 
+    public function removeAttributeFromClass(string $attributeClass): void
+    {
+        $classNode = $this->getClassNode();
+
+        foreach ($classNode->attrGroups as $k => $attrGroup) {
+            foreach ($attrGroup->attrs as $key => $attr) {
+                if (! str_contains($attr->name->toString(), Str::getShortClassName($attributeClass))) {
+                    continue;
+                }
+
+                unset($attrGroup->attrs[$key]);
+            }
+
+            if (! empty($attrGroup->attrs)) {
+                continue;
+            }
+
+            unset($classNode->attrGroups[$k]);
+        }
+
+        $this->updateSourceCodeFromNewStmts();
+    }
+
     /** @return string The alias to use when referencing this class */
     public function addUseStatementIfNecessary(string $class): string
     {
@@ -628,7 +651,8 @@ final class ClassSourceManipulator
     private function setSourceCode(string $sourceCode): void
     {
         $this->sourceCode = $sourceCode;
-        $this->oldStmts   = $this->parser->parse($sourceCode);
+
+        $this->oldStmts = $this->parser->parse($sourceCode);
 
         $this->oldTokens = $this->parser->getTokens();
 

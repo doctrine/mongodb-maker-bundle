@@ -8,8 +8,11 @@ use Doctrine\Bundle\MongoDBBundle\DoctrineMongoDBBundle;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\ClassSourceManipulator;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\DocumentClassGenerator;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\DocumentRelation;
+use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\Exception\IncompatibleParentRelationException;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\MongoDBHelper;
 use Doctrine\Bundle\MongoDBMakerBundle\MongoDB\Validator;
+use Doctrine\ODM\MongoDB\Mapping\Attribute\Document;
+use Doctrine\ODM\MongoDB\Mapping\Attribute\EmbeddedDocument;
 use Doctrine\ODM\MongoDB\Types\Type;
 use Exception;
 use InvalidArgumentException;
@@ -36,6 +39,7 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function assert;
 use function class_exists;
 use function dirname;
 use function file_get_contents;
@@ -142,6 +146,9 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
             );
 
             $generator->writeChanges();
+
+            require_once $documentPath;
+
             $io->text([
                 '',
                 'Document generated! Now let\'s add some fields!',
@@ -180,6 +187,20 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
                 } else {
                     $otherManipulatorFilename = $this->getPathOfClass($newField->getInverseClass());
                     $otherManipulator         = $this->createClassManipulator($otherManipulatorFilename);
+                }
+
+                try {
+                    $updateNewFieldTargetClass = $this->handleRelationCompatibility($newField, $io, $otherManipulator);
+                } catch (IncompatibleParentRelationException $e) {
+                    $errorMsg = $e->getMessage() . "\n";
+
+                    foreach ($e->parents as $parent) {
+                        $errorMsg .= "\n - " . $parent;
+                    }
+
+                    $io->error($errorMsg);
+                    $io->text('Skipping this field.');
+                    continue;
                 }
 
                 switch ($newField->getType()) {
@@ -241,7 +262,7 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
                 }
 
                 // save the inverse side if it's being mapped
-                if ($newField->getMapInverseRelation()) {
+                if ($newField->getMapInverseRelation() || $updateNewFieldTargetClass) {
                     $fileManagerOperations[$otherManipulatorFilename] = $otherManipulator;
                 }
 
@@ -260,6 +281,53 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
             'Next: Add more fields with the same command, or start using your document!',
             '',
         ]);
+    }
+
+    /** @throws IncompatibleParentRelationException */
+    private function handleRelationCompatibility(DocumentRelation $relation, ConsoleStyle $io, ClassSourceManipulator $manipulator): bool
+    {
+        // ToDo: handle self-referencing, as the class might not exist yet.
+        $type = $relation->getType();
+        $className = $relation->getTargetClassName();
+        assert(class_exists($className));
+
+        if (in_array($type, [DocumentRelation::EMBED_ONE, DocumentRelation::EMBED_MANY], true) && ! $this->mongoDBHelper->hasEmbeddedDocumentAttribute($className)) {
+            $io->warning('A document that is not marked as embedded can only be added as a `ReferenceOne` or `ReferenceMany` relation.');
+            if (! $io->confirm(sprintf('Would you like to make %s embedded?', $className), true)) {
+                return false;
+            }
+
+            $referencingParents = $this->mongoDBHelper->findReferencedBy($className);
+
+            if (! empty($referencingParents)) {
+                throw IncompatibleParentRelationException::forReferencingParents($className, ...$referencingParents);
+            }
+
+            $manipulator->removeAttributeFromClass(Document::class);
+            $manipulator->addAttributeToClass(EmbeddedDocument::class, []);
+
+            return true;
+        }
+
+        if (! $this->mongoDBHelper->hasEmbeddedDocumentAttribute($className)) {
+            return false;
+        }
+
+        $io->warning('An embedded document can only be added as an `EmbedOne` or `EmbedMany` relation.');
+        if (! $io->confirm(sprintf('Would you like to make %s a standalone document instead?', $className), true)) {
+            return false;
+        }
+
+        $embeddingParents = $this->mongoDBHelper->findEmbeddedBy($className);
+
+        if (! empty($embeddingParents)) {
+            throw IncompatibleParentRelationException::forEmbeddingParents($className, ...$embeddingParents);
+        }
+
+        $manipulator->addAttributeToClass(Document::class, []);
+        $manipulator->removeAttributeFromClass(EmbeddedDocument::class);
+
+        return true;
     }
 
     public function configureDependencies(DependencyBuilder $dependencies, ?InputInterface $input = null): void
@@ -440,7 +508,7 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
         // ask the targetDocument
         $targetDocumentClass = null;
         while ($targetDocumentClass === null) {
-            $question = $this->createDocumentClassQuestion('What class should this document be related to?');
+            $question = $this->createDocumentClassQuestion('What class should this document be related to?', $generatedDocumentClass);
 
             $answeredDocumentClass = $io->askQuestion($question);
 
@@ -651,11 +719,16 @@ final class MakeDocument extends AbstractMaker implements InputAwareMakerInterfa
         return $io->askQuestion($question);
     }
 
-    private function createDocumentClassQuestion(string $questionText): Question
+    private function createDocumentClassQuestion(string $questionText, ?string $currentDocument = null): Question
     {
+        $documentNames = array_merge(
+            $this->mongoDBHelper->getDocumentsForAutocomplete(),
+            $currentDocument ? [Str::getShortClassName($currentDocument)] : [],
+        );
+
         $question = new Question($questionText);
         $question->setValidator(Validator::notBlank(...));
-        $question->setAutocompleterValues($this->mongoDBHelper->getDocumentsForAutocomplete());
+        $question->setAutocompleterValues($documentNames);
 
         return $question;
     }

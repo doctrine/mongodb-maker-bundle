@@ -168,6 +168,48 @@ PHP;
         $this->assertStringContainsString('public ?self $parent = null;', $result);
     }
 
+    public function testRemoveAttributeFromClass_removesSingleAttribute(): void
+    {
+        $sourceCode = <<<'PHP'
+<?php
+
+namespace App\Document;
+
+#[SomeAttribute]
+class TestDocument
+{
+    public string $id;
+}
+PHP;
+        $manipulator = new ClassSourceManipulator($sourceCode);
+        $manipulator->removeAttributeFromClass('SomeAttribute');
+        $result = $manipulator->getSourceCode();
+        $this->assertStringNotContainsString('#[SomeAttribute]', $result);
+        $this->assertStringContainsString('class TestDocument', $result);
+    }
+
+    public function testRemoveAttributeFromClass_removesOneOfMultipleAttributes(): void
+    {
+        $sourceCode = <<<'PHP'
+<?php
+
+namespace App\Document;
+
+#[FirstAttribute]
+#[SecondAttribute]
+class TestDocument
+{
+    public string $id;
+}
+PHP;
+        $manipulator = new ClassSourceManipulator($sourceCode);
+        $manipulator->removeAttributeFromClass('FirstAttribute');
+        $result = $manipulator->getSourceCode();
+        $this->assertStringNotContainsString('#[FirstAttribute]', $result);
+        $this->assertStringContainsString('#[SecondAttribute]', $result);
+        $this->assertStringContainsString('class TestDocument', $result);
+    }
+
     private function getBaseDocumentSource(): string
     {
         return <<<'PHP'

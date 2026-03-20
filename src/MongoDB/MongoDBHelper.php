@@ -28,8 +28,11 @@ use function array_filter;
 use function array_first;
 use function array_flip;
 use function array_keys;
+use function array_map;
 use function array_pop;
+use function array_unique;
 use function assert;
+use function class_exists;
 use function count;
 use function explode;
 use function implode;
@@ -279,6 +282,54 @@ final class MongoDBHelper
         }
 
         return null;
+    }
+
+    /** @return string[] The names of any documents that embed the given class, either via `EmbedOne` or `EmbedMany` */
+    public function findEmbeddedBy(string $className): array
+    {
+        return $this->findParentAssociations($className, 'embedded');
+    }
+
+    /** @return string[] The names of any documents that reference the given class, either via `ReferenceOne` or `ReferenceMany` */
+    public function findReferencedBy(string $className): array
+    {
+        return $this->findParentAssociations($className, 'referenced');
+    }
+
+    /**
+     * @param 'embedded'|'referenced' $associationType
+     *
+     * @return class-string[]
+     */
+    private function findParentAssociations(string $className, string $associationType): array
+    {
+        $allMetadata = $this->getMetadata();
+
+        return array_unique(array_filter(array_map(static function (ClassMetadata $metadata) use ($className, $associationType): ?string {
+            foreach ($metadata->fieldMappings as $mapping) {
+                $targetDocument = $mapping['targetDocument'] ?? null;
+                if (isset($mapping[$associationType]) && $targetDocument === $className) {
+                    assert(class_exists($metadata->getName()));
+
+                    return $metadata->getName();
+                }
+            }
+
+            return null;
+        }, $allMetadata)));
+    }
+
+    /**
+     * Whether the given class is marked with an `EmbeddedDocument` attribute.
+     *
+     * @param class-string $className
+     */
+    public function hasEmbeddedDocumentAttribute(string $className): bool
+    {
+        $metadata = $this->registry->getManager()->getClassMetadata($className);
+        assert($metadata instanceof ClassMetadata);
+
+        return $metadata->isEmbeddedDocument;
     }
 
     private static function deriveSearchIndexTypeFromNativeType(string $type): string|null
