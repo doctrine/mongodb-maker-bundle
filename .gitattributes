@@ -2,8 +2,13 @@
 * text=auto eol=lf
 
 # Exclude non-essential files from dist
-/.* export-ignore
-/*.dist export-ignore
-/.neon export-ignore
-/docs export-ignore
-/tests export-ignore
+/* export-ignore
+/src -export-ignore
+/src/** -export-ignore
+/config -export-ignore
+/config/** -export-ignore
+/templates -export-ignore
+/templates/** -export-ignore
+/*.md -export-ignore
+/composer.json -export-ignore
+/phpstan-baseline.neon -export-ignore
